@@ -38,6 +38,8 @@ public class PadActivity extends AppCompatActivity {
     ImageView tie;
     ImageView collision;
     boolean isPressed;
+    private float xCoOrdinate, yCoOrdinate;
+
     //private SensorManager mSensorManager;
     //private Sensor accelerometer;
 
@@ -81,12 +83,16 @@ public class PadActivity extends AppCompatActivity {
         Log.i(TAG, "width        = " + width);
         Log.i(TAG, "height       = " + height);
 
-        int[] initPositionPad = new int[2];
-        padCenter.getLocationInWindow(initPositionPad);
-        System.out.println("pad init x  " + initPositionPad[0]);
-
-        float init_positionX = padCenter.getX();
-        float init_positionY = padCenter.getY();
+        final float[] init_positionX = new float[1];
+        final float[] init_positionY = new float[1];
+        padCenter.post(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("des barres" +padCenter.getX());
+                init_positionX[0] = padCenter.getX();
+                init_positionY[0] = padCenter.getY();
+            }
+        });
 
         Handler handlerForShip = new Handler();
         Runnable moveShip = new Runnable() {
@@ -94,21 +100,24 @@ public class PadActivity extends AppCompatActivity {
             @Override
             public void run() {
 
-                if (padCenter.getX() < init_positionX && padCenter.getY() < init_positionY) {
-                    tie.setX(tie.getX() - (init_positionX - padCenter.getX()));
-                    tie.setY(tie.getY() + (padCenter.getY() - init_positionY));
-                } else if (padCenter.getX() < init_positionX && padCenter.getY() > init_positionY) {
-                    tie.setX(tie.getX() - (init_positionX - padCenter.getX()));
-                    tie.setY(tie.getY() - (init_positionY - padCenter.getY()));
-                } else if (padCenter.getX() > init_positionX && padCenter.getY() < init_positionY) {
-                    tie.setX(tie.getX() + (padCenter.getX() - init_positionX));
-                    tie.setY(tie.getY() + (padCenter.getY() - init_positionY));
-                } else if (padCenter.getX() > init_positionX && padCenter.getY() > init_positionY) {
-                    tie.setX(tie.getX() + (padCenter.getX() - init_positionX));
-                    tie.setY(tie.getY() - (init_positionY - padCenter.getY()));
+                if (padCenter.getX() < init_positionX[0] && padCenter.getY() < init_positionY[0]) {
+                    tie.setX(tie.getX() - (init_positionX[0] - padCenter.getX()) /width);
+                    tie.setY(tie.getY() + (padCenter.getY() - init_positionY[0])/height);
 
+                } else if (padCenter.getX() < init_positionX[0] && padCenter.getY() > init_positionY[0]) {
+                    tie.setX(tie.getX() - (init_positionX[0] - padCenter.getX())/width);
+                    tie.setY(tie.getY() - (init_positionY[0] - padCenter.getY())/height);
 
-                    if ((tie.getX() > width || tie.getY() > height)) {
+                } else if (padCenter.getX() > init_positionX[0] && padCenter.getY() < init_positionY[0]) {
+                    tie.setX(tie.getX() + (padCenter.getX() - init_positionX[0])/width);
+                    tie.setY(tie.getY() + (padCenter.getY() - init_positionY[0])/height);
+
+                } else if (padCenter.getX() > init_positionX[0] && padCenter.getY() > init_positionY[0]) {
+                    tie.setX(tie.getX() + (padCenter.getX() - init_positionX[0])/width);
+                    tie.setY(tie.getY() - (init_positionY[0] - padCenter.getY())/height);
+                }
+
+                     if ((tie.getX() > width || tie.getX() < 0 || tie.getY() > height || tie.getY() < 0)) {
                         showAlertDialog();
                     }
 
@@ -116,8 +125,6 @@ public class PadActivity extends AppCompatActivity {
                         handlerForShip.postDelayed(this, 5);
                     }
                 }
-
-            }
         };
 
 
@@ -128,25 +135,25 @@ public class PadActivity extends AppCompatActivity {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
                         isPressed = true;
+                        xCoOrdinate = v.getX() - event.getRawX();
+                        yCoOrdinate = v.getY() - event.getRawY();
                         break;
 
                     case MotionEvent.ACTION_MOVE:
-                        padCenter.setX(event.getX());
-                        padCenter.setY(event.getY());
+                        v.animate().x(event.getRawX() + xCoOrdinate).y(event.getRawY() + yCoOrdinate).setDuration(0).start();
+                        float test = event.getX();
+                        Log.d("test", String.valueOf(test));
+
                         moveShip.run();
+
                         if (sontEnCollision(asteroid1, tie)) {
                             collision.setVisibility(View.VISIBLE);
                         }
                         break;
 
                     case MotionEvent.ACTION_UP:
-                        //
                         isPressed = false;
-                        padCenter.setX(init_positionX);
-                        padCenter.setY(init_positionY);
-                        System.out.println("pas init 2" + init_positionX);
-
-
+                        v.animate().x(init_positionX[0]).y(init_positionY[0]).start();
                         break;
                     default:
                         return false;
