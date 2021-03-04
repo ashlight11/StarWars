@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MenuActivity">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0">
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Bienvenue dans Star Wars!"
+            android:textAlignment="center"
+            android:textAppearance="@android:style/TextAppearance.Material.Display3" />
+
+        <Button
+            android:id="@+id/jeuPad"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="70dp"
+            android:layout_marginTop="68dp"
+            android:layout_marginEnd="70dp"
+            android:text="Jeu avec pad"
+            app:iconTint="@color/teal_200"
+            app:rippleColor="@color/white" />
+
+        <Button
+            android:id="@+id/jeuAccel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="69dp"
+            android:layout_marginEnd="70dp"
+            android:layout_marginBottom="156dp"
+            android:text="Jeu avec accéléromètre"
+            app:rippleColor="@color/white" />
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/imageView5"
+                android:layout_width="390dp"
+                android:layout_height="232dp"
+                android:layout_gravity="center|center_horizontal"
+                app:srcCompat="@drawable/tie" />
+
+            <ImageView
+                android:id="@+id/imageView6"
+                android:layout_width="156dp"
+                android:layout_height="137dp"
+                android:layout_gravity="center"
+                app:srcCompat="@drawable/explosion" />
+        </FrameLayout>
+
+    </LinearLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
