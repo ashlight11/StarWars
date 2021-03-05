@@ -18,11 +18,10 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.PathInterpolator;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
+
+import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -34,24 +33,30 @@ public class PadActivity extends AppCompatActivity {
     private static final String TAG = "PadActivity";
     ImageView asteroid1;
     ImageView asteroid2;
+    ImageView asteroid3;
+    ImageView asteroid4;
     ImageView padCenter;
     ImageView tie;
     ImageView collision;
-    boolean isPressed;
+    boolean isPressed = false;
     private float xCoOrdinate, yCoOrdinate;
 
-    //private SensorManager mSensorManager;
-    //private Sensor accelerometer;
 
     boolean sontEnCollision(ImageView firstView, ImageView secondView) {
         int[] firstPosition = new int[2];
         int[] secondPosition = new int[2];
+        int firstWidth = firstView.getMeasuredWidth(), firstHeight = firstView.getMeasuredHeight();
+        int secondWidth = firstView.getMeasuredWidth(), secondHeight = firstView.getMeasuredHeight();
         firstView.getLocationOnScreen(firstPosition);
         secondView.getLocationOnScreen(secondPosition);
-        Rect rectFirstView = new Rect(firstPosition[0], firstPosition[1],
-                firstPosition[0] + firstView.getMeasuredWidth(), firstPosition[1] + firstView.getMeasuredHeight());
-        Rect rectSecondView = new Rect(secondPosition[0], secondPosition[1],
-                secondPosition[0] + secondView.getMeasuredWidth(), secondPosition[1] + secondView.getMeasuredHeight());
+        Rect rectFirstView = new Rect(firstPosition[0] + firstWidth / 4,
+                firstPosition[1] + firstHeight / 4,
+                firstPosition[0] + 3 * firstWidth / 4,
+                firstPosition[1] + 3 * firstHeight / 4);
+        Rect rectSecondView = new Rect(secondPosition[0] + secondWidth / 4,
+                secondPosition[1] + firstHeight / 4,
+                secondPosition[0] + 3 * secondWidth / 4,
+                secondPosition[1] + 3 * secondHeight / 4);
 
         return (rectFirstView.intersect(rectSecondView));
     }
@@ -62,14 +67,14 @@ public class PadActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pad);
-
         asteroid1 = findViewById(R.id.asteroid_1);
         asteroid2 = findViewById(R.id.asteroid_2);
+        asteroid3 = findViewById(R.id.asteroid_3);
+        asteroid4 = findViewById(R.id.asteroid_4);
         padCenter = findViewById(R.id.pad_center);
         tie = findViewById(R.id.tie);
         collision = findViewById(R.id.collision);
-        //tie.setX(500);
-        // tie.setY(500);
+
 
         Display display = getWindowManager().getDefaultDisplay();
         String displayName = display.getName();  // minSdkVersion=17+
@@ -85,10 +90,10 @@ public class PadActivity extends AppCompatActivity {
 
         final float[] init_positionX = new float[1];
         final float[] init_positionY = new float[1];
+
         padCenter.post(new Runnable() {
             @Override
             public void run() {
-                System.out.println("des barres" +padCenter.getX());
                 init_positionX[0] = padCenter.getX();
                 init_positionY[0] = padCenter.getY();
             }
@@ -100,31 +105,48 @@ public class PadActivity extends AppCompatActivity {
             @Override
             public void run() {
 
+                // déplacement vers la gauche et vers le haut
                 if (padCenter.getX() < init_positionX[0] && padCenter.getY() < init_positionY[0]) {
-                    tie.setX(tie.getX() - (init_positionX[0] - padCenter.getX()) /width);
-                    tie.setY(tie.getY() + (padCenter.getY() - init_positionY[0])/height);
+                    tie.setX(tie.getX() - (init_positionX[0] - padCenter.getX()) / width);
+                    tie.setY(tie.getY() + (padCenter.getY() - init_positionY[0]) / height);
 
+
+                    // déplacement vers la gauche et vers le bas
                 } else if (padCenter.getX() < init_positionX[0] && padCenter.getY() > init_positionY[0]) {
-                    tie.setX(tie.getX() - (init_positionX[0] - padCenter.getX())/width);
-                    tie.setY(tie.getY() - (init_positionY[0] - padCenter.getY())/height);
+                    tie.setX(tie.getX() - (init_positionX[0] - padCenter.getX()) / width);
+                    tie.setY(tie.getY() - (init_positionY[0] - padCenter.getY()) / height);
 
+                    // vers la droite et vers le bas
                 } else if (padCenter.getX() > init_positionX[0] && padCenter.getY() < init_positionY[0]) {
-                    tie.setX(tie.getX() + (padCenter.getX() - init_positionX[0])/width);
-                    tie.setY(tie.getY() + (padCenter.getY() - init_positionY[0])/height);
+                    tie.setX(tie.getX() + (padCenter.getX() - init_positionX[0]) / width);
+                    tie.setY(tie.getY() + (padCenter.getY() - init_positionY[0]) / height);
 
+                    // vers la gauche et vers le bas
                 } else if (padCenter.getX() > init_positionX[0] && padCenter.getY() > init_positionY[0]) {
-                    tie.setX(tie.getX() + (padCenter.getX() - init_positionX[0])/width);
-                    tie.setY(tie.getY() - (init_positionY[0] - padCenter.getY())/height);
+                    tie.setX(tie.getX() + (padCenter.getX() - init_positionX[0]) / width);
+                    tie.setY(tie.getY() - (init_positionY[0] - padCenter.getY()) / height);
                 }
 
-                     if ((tie.getX() > width || tie.getX() < 0 || tie.getY() > height || tie.getY() < 0)) {
-                        showAlertDialog();
-                    }
-
-                    if (isPressed) {
-                        handlerForShip.postDelayed(this, 5);
-                    }
+                // si l'on touche un bord, on passe au côté opposé de l'écran
+                if (tie.getX() > width - 10) {
+                    tie.setX(20);
                 }
+                if (tie.getX() < 5) {
+                    tie.setX(width - 30);
+                }
+                if (tie.getY() > height - 10) {
+                    tie.setY(20);
+                }
+                if (tie.getY() < 5) {
+                    tie.setY(height - 30);
+                }
+
+                if (isPressed) {
+                    handlerForShip.postDelayed(this, 10);
+                }
+
+
+            }
         };
 
 
@@ -141,14 +163,7 @@ public class PadActivity extends AppCompatActivity {
 
                     case MotionEvent.ACTION_MOVE:
                         v.animate().x(event.getRawX() + xCoOrdinate).y(event.getRawY() + yCoOrdinate).setDuration(0).start();
-                        float test = event.getX();
-                        Log.d("test", String.valueOf(test));
-
                         moveShip.run();
-
-                        if (sontEnCollision(asteroid1, tie)) {
-                            collision.setVisibility(View.VISIBLE);
-                        }
                         break;
 
                     case MotionEvent.ACTION_UP:
@@ -158,17 +173,64 @@ public class PadActivity extends AppCompatActivity {
                     default:
                         return false;
                 }
+
+                if (sontEnCollision(asteroid1, tie) || sontEnCollision(asteroid2, tie)
+                        || sontEnCollision(asteroid3, tie) || sontEnCollision(asteroid4, tie)) {
+
+                    collision.setX(tie.getX());
+                    collision.setY(tie.getY());
+                    collision.setVisibility(View.VISIBLE);
+                    tie.invalidate();
+                    showAlertDialog();
+                }
+
                 return true;
             }
 
         });
 
+        /* ---------------------------------------------------------------
+
+        Création des trajectoires des astéroïdes
+
+        ------------------------------------------------------------------ */
+
+
+        // Premier astéroide
         Path path = new Path();
-        path.arcTo(0f, 0f, 1000f, 1000f, 270f, -180f, true);
+        path.arcTo(0f, 0f, 1000f, height, 270f, -180f, true);
         ObjectAnimator animatorsOfAsteroid = ObjectAnimator.ofFloat(asteroid1, View.X, View.Y, path);
         animatorsOfAsteroid.setDuration(4000);
         animatorsOfAsteroid.setRepeatCount(Animation.INFINITE);
         animatorsOfAsteroid.start();
+
+        // Deuxième
+        Path path2 = new Path();
+        path2.moveTo(600f, height - 70);
+        path2.quadTo(width, 3000f, 0f, 20f);
+        ObjectAnimator animatorOfAsteroid2 = ObjectAnimator.ofFloat(asteroid2, View.X, View.Y, path2);
+        animatorOfAsteroid2.setDuration(8000);
+        animatorOfAsteroid2.setRepeatCount(Animation.INFINITE);
+        animatorOfAsteroid2.start();
+
+        // Troisième
+        Path path3 = new Path();
+        path3.cubicTo(1500f, 3000f, 200f, 3000f, 1240f, 1540f);
+        ObjectAnimator animatorsOfAsteroid3;
+        animatorsOfAsteroid3 = ObjectAnimator.ofFloat(asteroid3, View.X, View.Y, path3);
+        animatorsOfAsteroid3.setDuration(7000);
+        animatorsOfAsteroid3.setRepeatCount(Animation.INFINITE);
+        animatorsOfAsteroid3.start();
+
+        // Quatrième
+        Path path4 = new Path();
+        path4.moveTo(800f, 30f);
+        path4.quadTo(30f, 200f, 600f, 3000f);
+        ObjectAnimator animatorsOfAsteroid4;
+        animatorsOfAsteroid4 = ObjectAnimator.ofFloat(asteroid4, View.X, View.Y, path4);
+        animatorsOfAsteroid4.setDuration(5000);
+        animatorsOfAsteroid4.setRepeatCount(Animation.INFINITE);
+        animatorsOfAsteroid4.start();
 
     }
 

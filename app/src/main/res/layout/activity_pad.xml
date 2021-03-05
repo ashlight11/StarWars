@@ -26,6 +26,26 @@
                 app:srcCompat="@drawable/etoilefond" />
 
             <ImageView
+                android:id="@+id/asteroid_4"
+                android:layout_width="48dp"
+                android:layout_height="42dp"
+                android:layout_marginTop="109dp"
+                android:layout_marginEnd="84dp"
+                app:layout_constraintEnd_toEndOf="@+id/starsBackground"
+                app:layout_constraintTop_toTopOf="@+id/starsBackground"
+                app:srcCompat="@drawable/asteroid4" />
+
+            <ImageView
+                android:id="@+id/asteroid_3"
+                android:layout_width="52dp"
+                android:layout_height="50dp"
+                android:layout_marginStart="67dp"
+                android:layout_marginTop="545dp"
+                app:layout_constraintStart_toStartOf="@+id/starsBackground"
+                app:layout_constraintTop_toTopOf="@+id/starsBackground"
+                app:srcCompat="@drawable/asteroid3" />
+
+            <ImageView
                 android:id="@+id/asteroid_2"
                 android:layout_width="77dp"
                 android:layout_height="69dp"
