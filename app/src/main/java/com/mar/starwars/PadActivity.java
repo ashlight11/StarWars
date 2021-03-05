@@ -18,6 +18,7 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.PathInterpolator;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import java.util.Random;
 import java.util.Timer;
@@ -29,40 +30,46 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class PadActivity extends AppCompatActivity {
 
+    // Liste des objets
     ImageView asteroid1;
     ImageView asteroid2;
     ImageView asteroid3;
     ImageView asteroid4;
     ImageView padCenter;
-    ImageView tie;
-    ImageView collision;
-    boolean isPressed = false;
-    private float xCoOrdinate, yCoOrdinate;
+    ImageView tie; // -> Le vaisseau spatial
+    ImageView collision; // -> L'animation d'explosion
+    int width; // -> largeur de l'écran
+    int height; // -> hauteur de l'écran
+    boolean isPressed = false; // -> le pad est appuyé
+    private float xCoOrdinate, yCoOrdinate; // coordonées du pad
 
 
+    // Permet de détecter les collisions entre objets, a été modifiée par rapport à celle initialement donnée
     boolean sontEnCollision(ImageView obstacle, ImageView vaisseau) {
-        int[] firstPosition = new int[2];
-        int[] secondPosition = new int[2];
-        int firstWidth = obstacle.getMeasuredWidth(), firstHeight = obstacle.getMeasuredHeight();
-        int secondWidth = obstacle.getMeasuredWidth(), secondHeight = obstacle.getMeasuredHeight();
-        obstacle.getLocationOnScreen(firstPosition);
-        vaisseau.getLocationOnScreen(secondPosition);
-        Rect rectObstacle = new Rect(firstPosition[0],
-                firstPosition[1],
-                firstPosition[0] + firstWidth,
-                firstPosition[1] + firstHeight);
-        Rect rectVaisseau = new Rect(secondPosition[0] + secondWidth / 4,
-                secondPosition[1] + firstHeight / 4,
-                secondPosition[0] + 3 * secondWidth / 4,
-                secondPosition[1] + 3 * secondHeight / 4);
+        int[] positionObstacle = new int[2];
+        int[] positionVaisseau = new int[2];
+        int largeurObstacle = obstacle.getMeasuredWidth(), hauteurObstacle = obstacle.getMeasuredHeight();
+        int largeurVaisseau = vaisseau.getMeasuredWidth(), hauteurVaisseau = vaisseau.getMeasuredHeight();
+        obstacle.getLocationOnScreen(positionObstacle);
+        vaisseau.getLocationOnScreen(positionVaisseau);
+        // On retourne un rectangle de largeur "largeurObstacle" et de hauteur "hauteurObstacle"
+        Rect rectObstacle = new Rect(positionObstacle[0],
+                positionObstacle[1],
+                positionObstacle[0] + largeurObstacle,
+                positionObstacle[1] + hauteurObstacle);
+        // On retourne un rectangle de largeur "largeurVaisseau /2" et de hauteur "hauteurVaisseau /2"
+        Rect rectVaisseau = new Rect(positionVaisseau[0] + largeurVaisseau / 4,
+                positionVaisseau[1] + hauteurVaisseau / 4,
+                positionVaisseau[0] + 3 * largeurVaisseau / 4,
+                positionVaisseau[1] + 3 * hauteurVaisseau / 4);
         return (rectObstacle.intersect(rectVaisseau));
     }
-
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // identification des élements de la vue
         setContentView(R.layout.activity_pad);
         asteroid1 = findViewById(R.id.asteroid_1);
         asteroid2 = findViewById(R.id.asteroid_2);
@@ -72,15 +79,12 @@ public class PadActivity extends AppCompatActivity {
         tie = findViewById(R.id.tie);
         collision = findViewById(R.id.collision);
 
-
+        // Calcul de la taille de l'écran en pixels afin de s'adapter à tous les téléphones
         Display display = getWindowManager().getDefaultDisplay();
-
-// display size in pixels
         Point size = new Point();
         display.getSize(size);
-        int width = size.x;
-        int height = size.y;
-
+        width = size.x;
+        height = size.y;
 
         /* ---------------------------------------------------------------
 
@@ -125,14 +129,15 @@ public class PadActivity extends AppCompatActivity {
         animatorsOfAsteroid4.setRepeatCount(Animation.INFINITE);
         animatorsOfAsteroid4.start();
 
+        // Calcul de la position initiale du pad par rapport à l'écran entier
         final float[] init_positionX = new float[1];
         final float[] init_positionY = new float[1];
-
         padCenter.post(() -> {
             init_positionX[0] = padCenter.getX();
             init_positionY[0] = padCenter.getY();
         });
 
+        // Création du thread de déplacement du vaisseau
         Handler handlerForShip = new Handler();
         Runnable moveShip = new Runnable() {
 
@@ -178,42 +183,48 @@ public class PadActivity extends AppCompatActivity {
                 if (isPressed) {
                     handlerForShip.postDelayed(this, 10);
                 }
-
-
             }
         };
 
 
+        // Gestion des interactions avec le bouton pad
         padCenter.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
                         isPressed = true;
+                        // calcul des coordonées sur l'écran
                         xCoOrdinate = v.getX() - event.getRawX();
                         yCoOrdinate = v.getY() - event.getRawY();
                         break;
 
                     case MotionEvent.ACTION_MOVE:
+                        // animation du déplacement du pad
                         v.animate().x(event.getRawX() + xCoOrdinate).y(event.getRawY() + yCoOrdinate).setDuration(0).start();
+                        // déplacement du vaisseau
                         moveShip.run();
                         break;
 
                     case MotionEvent.ACTION_UP:
                         isPressed = false;
+                        // garantit que le pad revient à sa position initale de manière fluide
                         v.animate().x(init_positionX[0]).y(init_positionY[0]).start();
                         break;
                     default:
                         return false;
                 }
 
+                // détection des collisions
                 if (sontEnCollision(asteroid1, tie) || sontEnCollision(asteroid2, tie)
                         || sontEnCollision(asteroid3, tie) || sontEnCollision(asteroid4, tie)) {
+                    // on immobilise le pad et le vaisseau
                     padCenter.setAnimation(null);
                     tie.setAnimation(null);
+                    // on anime l'explosion
                     collision.animate().x(tie.getX()).y(tie.getY()).setDuration(10).start();
                     collision.setVisibility(View.VISIBLE);
+                    // on affiche la popup
                     showAlertDialog();
                 }
 
@@ -224,6 +235,7 @@ public class PadActivity extends AppCompatActivity {
 
     }
 
+    // Affichage de la pop-up
     public void showAlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Vous avez perdu");

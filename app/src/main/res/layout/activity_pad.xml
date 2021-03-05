@@ -118,6 +118,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     app:srcCompat="@drawable/pad_center" />
+
             </FrameLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>

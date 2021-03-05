@@ -24,42 +24,55 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
+    // Liste des objets
     ImageView asteroid1;
     ImageView asteroid2;
     ImageView asteroid3;
     ImageView asteroid4;
-    ImageView ship;
-    ImageView explosion;
+    ImageView ship; // -> Le vaisseau spatial
+    ImageView explosion; // -> L'animation d'explosion
+    TextView score; // -> Le score du joueur
+    int count = 0; // -> Pour le calcul du score
+
+    // Capteur
     private SensorManager mSensorManager;
     private Sensor accelerometer;
-    int width;
-    int height;
-    float X, Y;
-    float gammaX, gammaY, gammaZ;
-    boolean inPlay;
 
+    int width; // -> largeur de l'écran
+    int height; // -> hauteur de l'écran
+    float X, Y; // Coordonées du vaisseau
+    float gammaX, gammaY, gammaZ; // -> valeurs de retour de l'acceleromètre
+    boolean inPlay; // connaître l'état de jeu
+
+    // Permet de détecter les collisions entre objets, a été modifiée par rapport à celle initialement donnée
     boolean sontEnCollision(ImageView obstacle, ImageView vaisseau) {
-        int[] firstPosition = new int[2];
-        int[] secondPosition = new int[2];
-        int firstWidth = obstacle.getMeasuredWidth(), firstHeight = obstacle.getMeasuredHeight();
-        int secondWidth = obstacle.getMeasuredWidth(), secondHeight = obstacle.getMeasuredHeight();
-        obstacle.getLocationOnScreen(firstPosition);
-        vaisseau.getLocationOnScreen(secondPosition);
-        Rect rectObstacle = new Rect(firstPosition[0],
-                firstPosition[1],
-                firstPosition[0] + firstWidth,
-                firstPosition[1] + firstHeight);
-        Rect rectVaisseau = new Rect(secondPosition[0] + secondWidth / 4,
-                secondPosition[1] + firstHeight / 4,
-                secondPosition[0] + 3 * secondWidth / 4,
-                secondPosition[1] + 3 * secondHeight / 4);
+        int[] positionObstacle = new int[2];
+        int[] positionVaisseau = new int[2];
+        int largeurObstacle = obstacle.getMeasuredWidth(), hauteurObstacle = obstacle.getMeasuredHeight();
+        int largeurVaisseau = vaisseau.getMeasuredWidth(), hauteurVaisseau = vaisseau.getMeasuredHeight();
+        obstacle.getLocationOnScreen(positionObstacle);
+        vaisseau.getLocationOnScreen(positionVaisseau);
+        // On retourne un rectangle de largeur "largeurObstacle" et de hauteur "hauteurObstacle"
+        Rect rectObstacle = new Rect(positionObstacle[0],
+                positionObstacle[1],
+                positionObstacle[0] + largeurObstacle,
+                positionObstacle[1] + hauteurObstacle);
+        // On retourne un rectangle de largeur "largeurVaisseau /2" et de hauteur "hauteurVaisseau /2"
+        Rect rectVaisseau = new Rect(positionVaisseau[0] + largeurVaisseau / 4,
+                positionVaisseau[1] + hauteurVaisseau / 4,
+                positionVaisseau[0] + 3 * largeurVaisseau / 4,
+                positionVaisseau[1] + 3 * hauteurVaisseau / 4);
         return (rectObstacle.intersect(rectVaisseau));
     }
 
@@ -68,16 +81,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // identification des élements de la vue
         setContentView(R.layout.activity_main);
-        asteroid1 = (ImageView) findViewById(R.id.asteroid1);
-        asteroid2 = (ImageView) findViewById(R.id.asteroid2);
-        asteroid3 = (ImageView) findViewById(R.id.asteroid3);
-        asteroid4 = (ImageView) findViewById(R.id.asteroid4);
-        ship = (ImageView) findViewById(R.id.ship);
-        explosion = (ImageView) findViewById(R.id.explosion);
+        asteroid1 = findViewById(R.id.asteroid1);
+        asteroid2 = findViewById(R.id.asteroid2);
+        asteroid3 = findViewById(R.id.asteroid3);
+        asteroid4 = findViewById(R.id.asteroid4);
+        ship = findViewById(R.id.ship);
+        explosion = findViewById(R.id.explosion);
+        score = findViewById(R.id.score);
 
+        // Calcul de la taille de l'écran en pixels afin de s'adapter à tous les téléphones
         Display display = getWindowManager().getDefaultDisplay();
-// display size in pixels
         Point size = new Point();
         display.getSize(size);
         width = size.x;
@@ -87,6 +102,27 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+
+
+        // Timer (donc nouveau thread) pour calculer le score
+        // Ici, un point toutes les demi-secondes survécues
+        Timer T = new Timer();
+        T.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // on s'assure qu'on joue avant d'incrémenter le score
+                        if (inPlay) {
+                            score.setText("Score = " + count);
+                            count++;
+                        }
+
+                    }
+                });
+            }
+        }, 1000, 500);
 
         /* ---------------------------------------------------------------
 
@@ -132,18 +168,23 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     }
 
-
+    // Gestion du changement des valeurs de l'acceleromètre
     @Override
     public void onSensorChanged(SensorEvent event) {
+        // on joue
+        inPlay = true;
+        // on prend les coordonées à l'instant
         X = ship.getX();
         Y = ship.getY();
 
+        // on affecte les valeurs de l'acceleromètres à des variables
         gammaX = event.values[0];
         gammaY = event.values[1];
         gammaZ = event.values[2];
-        Log.d("Valeurs accelerometre", gammaX + "," + gammaY + "," + gammaZ);
 
-        ship.animate().x(X -gammaX * 10).y(Y + (gammaY - 5) * 10 - (gammaZ - 5) * 10).setDuration(0).start();
+        // On déplace le vaisseau en fonction de ces valeurs
+        ship.setX(X - gammaX * 10); // on multiplie pour que le déplacement soit plus rapide
+        ship.setY(Y + (gammaY - 5) * 10 - (gammaZ - 2) * 10); // gammaZ permet une meilleure jouabilité (plus de sensibilité)
 
         // si l'on touche un bord, on passe au côté opposé de l'écran
         if (ship.getX() > width - 10) {
@@ -159,32 +200,32 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             ship.setY(height - 30);
         }
 
-
+        // Détection des collisions
         if (sontEnCollision(asteroid1, ship) || sontEnCollision(asteroid2, ship)
-        || sontEnCollision(asteroid3, ship) || sontEnCollision(asteroid4, ship)) {
-            ship.setAnimation(null);
-            onPause();
-            explosion.setVisibility(View.VISIBLE);
-            explosion.animate().x(X).y(Y).setDuration(10).start();
-            showAlertDialog();
+                || sontEnCollision(asteroid3, ship) || sontEnCollision(asteroid4, ship)) {
+            ship.setAnimation(null); // on arrête le mouvement
+            onPause(); // on met en pause l'accelerometre (évite d'ouvrir des pop-ups sans fin)
+            explosion.setVisibility(View.VISIBLE); // on affiche l'explosion
+            explosion.animate().x(X).y(Y).setDuration(10).start(); // on l'anime
+            showAlertDialog(); // on affiche un message de fin de jeu
         }
-
-
     }
 
-    // pas implémenté
+    // non implémenté
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
         // vide
     }
 
+    // lorsque l'on arrête le capteur
     @Override
     protected void onPause() {
         super.onPause();
-        inPlay = false;
-        mSensorManager.unregisterListener(this);
+        inPlay = false; // on ne joue plus
+        mSensorManager.unregisterListener(this); // on supprime le capteur du SensorManager
     }
 
+    // Reprise du jeu et des mesures
     @Override
     protected void onResume() {
         super.onResume();
@@ -192,11 +233,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
     }
 
+    // Affichage de la pop-up
     public void showAlertDialog() {
-
-        inPlay = false;
+        inPlay = false; // on ne joue plus
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Vous avez perdu");
+        builder.setTitle("Vous avez perdu! Votre score : " + count);
         builder.setMessage("Que voulez-vous faire?");
         builder.setPositiveButton("Rejouer", new DialogInterface.OnClickListener() {
             @Override
