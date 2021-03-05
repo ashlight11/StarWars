@@ -29,8 +29,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class PadActivity extends AppCompatActivity {
 
-
-    private static final String TAG = "PadActivity";
     ImageView asteroid1;
     ImageView asteroid2;
     ImageView asteroid3;
@@ -42,23 +40,22 @@ public class PadActivity extends AppCompatActivity {
     private float xCoOrdinate, yCoOrdinate;
 
 
-    boolean sontEnCollision(ImageView firstView, ImageView secondView) {
+    boolean sontEnCollision(ImageView obstacle, ImageView vaisseau) {
         int[] firstPosition = new int[2];
         int[] secondPosition = new int[2];
-        int firstWidth = firstView.getMeasuredWidth(), firstHeight = firstView.getMeasuredHeight();
-        int secondWidth = firstView.getMeasuredWidth(), secondHeight = firstView.getMeasuredHeight();
-        firstView.getLocationOnScreen(firstPosition);
-        secondView.getLocationOnScreen(secondPosition);
-        Rect rectFirstView = new Rect(firstPosition[0] + firstWidth / 4,
-                firstPosition[1] + firstHeight / 4,
-                firstPosition[0] + 3 * firstWidth / 4,
-                firstPosition[1] + 3 * firstHeight / 4);
-        Rect rectSecondView = new Rect(secondPosition[0] + secondWidth / 4,
+        int firstWidth = obstacle.getMeasuredWidth(), firstHeight = obstacle.getMeasuredHeight();
+        int secondWidth = obstacle.getMeasuredWidth(), secondHeight = obstacle.getMeasuredHeight();
+        obstacle.getLocationOnScreen(firstPosition);
+        vaisseau.getLocationOnScreen(secondPosition);
+        Rect rectObstacle = new Rect(firstPosition[0],
+                firstPosition[1],
+                firstPosition[0] + firstWidth,
+                firstPosition[1] + firstHeight);
+        Rect rectVaisseau = new Rect(secondPosition[0] + secondWidth / 4,
                 secondPosition[1] + firstHeight / 4,
                 secondPosition[0] + 3 * secondWidth / 4,
                 secondPosition[1] + 3 * secondHeight / 4);
-
-        return (rectFirstView.intersect(rectSecondView));
+        return (rectObstacle.intersect(rectVaisseau));
     }
 
 
@@ -77,26 +74,63 @@ public class PadActivity extends AppCompatActivity {
 
 
         Display display = getWindowManager().getDefaultDisplay();
-        String displayName = display.getName();  // minSdkVersion=17+
-        Log.i(TAG, "displayName  = " + displayName);
 
 // display size in pixels
         Point size = new Point();
         display.getSize(size);
         int width = size.x;
         int height = size.y;
-        Log.i(TAG, "width        = " + width);
-        Log.i(TAG, "height       = " + height);
+
+
+        /* ---------------------------------------------------------------
+
+        Création des trajectoires des astéroïdes
+
+        ------------------------------------------------------------------ */
+
+
+        // Premier astéroide
+        Path path = new Path();
+        path.arcTo(0f, 0f, 1000f, height, 270f, -180f, true);
+        ObjectAnimator animatorsOfAsteroid = ObjectAnimator.ofFloat(asteroid1, View.X, View.Y, path);
+        animatorsOfAsteroid.setDuration(4000);
+        animatorsOfAsteroid.setRepeatCount(Animation.INFINITE);
+        animatorsOfAsteroid.start();
+
+        // Deuxième
+        Path path2 = new Path();
+        path2.moveTo(600f, height - 70);
+        path2.quadTo(width, 3000f, 0f, 20f);
+        ObjectAnimator animatorOfAsteroid2 = ObjectAnimator.ofFloat(asteroid2, View.X, View.Y, path2);
+        animatorOfAsteroid2.setDuration(8000);
+        animatorOfAsteroid2.setRepeatCount(Animation.INFINITE);
+        animatorOfAsteroid2.start();
+
+        // Troisième
+        Path path3 = new Path();
+        path3.cubicTo(1500f, 3000f, 200f, 3000f, 1240f, 1540f);
+        ObjectAnimator animatorsOfAsteroid3;
+        animatorsOfAsteroid3 = ObjectAnimator.ofFloat(asteroid3, View.X, View.Y, path3);
+        animatorsOfAsteroid3.setDuration(7000);
+        animatorsOfAsteroid3.setRepeatCount(Animation.INFINITE);
+        animatorsOfAsteroid3.start();
+
+        // Quatrième
+        Path path4 = new Path();
+        path4.moveTo(800f, 30f);
+        path4.quadTo(30f, 200f, 600f, 3000f);
+        ObjectAnimator animatorsOfAsteroid4;
+        animatorsOfAsteroid4 = ObjectAnimator.ofFloat(asteroid4, View.X, View.Y, path4);
+        animatorsOfAsteroid4.setDuration(5000);
+        animatorsOfAsteroid4.setRepeatCount(Animation.INFINITE);
+        animatorsOfAsteroid4.start();
 
         final float[] init_positionX = new float[1];
         final float[] init_positionY = new float[1];
 
-        padCenter.post(new Runnable() {
-            @Override
-            public void run() {
-                init_positionX[0] = padCenter.getX();
-                init_positionY[0] = padCenter.getY();
-            }
+        padCenter.post(() -> {
+            init_positionX[0] = padCenter.getX();
+            init_positionY[0] = padCenter.getY();
         });
 
         Handler handlerForShip = new Handler();
@@ -176,11 +210,10 @@ public class PadActivity extends AppCompatActivity {
 
                 if (sontEnCollision(asteroid1, tie) || sontEnCollision(asteroid2, tie)
                         || sontEnCollision(asteroid3, tie) || sontEnCollision(asteroid4, tie)) {
-
-                    collision.setX(tie.getX());
-                    collision.setY(tie.getY());
+                    padCenter.setAnimation(null);
+                    tie.setAnimation(null);
+                    collision.animate().x(tie.getX()).y(tie.getY()).setDuration(10).start();
                     collision.setVisibility(View.VISIBLE);
-                    tie.invalidate();
                     showAlertDialog();
                 }
 
@@ -188,49 +221,6 @@ public class PadActivity extends AppCompatActivity {
             }
 
         });
-
-        /* ---------------------------------------------------------------
-
-        Création des trajectoires des astéroïdes
-
-        ------------------------------------------------------------------ */
-
-
-        // Premier astéroide
-        Path path = new Path();
-        path.arcTo(0f, 0f, 1000f, height, 270f, -180f, true);
-        ObjectAnimator animatorsOfAsteroid = ObjectAnimator.ofFloat(asteroid1, View.X, View.Y, path);
-        animatorsOfAsteroid.setDuration(4000);
-        animatorsOfAsteroid.setRepeatCount(Animation.INFINITE);
-        animatorsOfAsteroid.start();
-
-        // Deuxième
-        Path path2 = new Path();
-        path2.moveTo(600f, height - 70);
-        path2.quadTo(width, 3000f, 0f, 20f);
-        ObjectAnimator animatorOfAsteroid2 = ObjectAnimator.ofFloat(asteroid2, View.X, View.Y, path2);
-        animatorOfAsteroid2.setDuration(8000);
-        animatorOfAsteroid2.setRepeatCount(Animation.INFINITE);
-        animatorOfAsteroid2.start();
-
-        // Troisième
-        Path path3 = new Path();
-        path3.cubicTo(1500f, 3000f, 200f, 3000f, 1240f, 1540f);
-        ObjectAnimator animatorsOfAsteroid3;
-        animatorsOfAsteroid3 = ObjectAnimator.ofFloat(asteroid3, View.X, View.Y, path3);
-        animatorsOfAsteroid3.setDuration(7000);
-        animatorsOfAsteroid3.setRepeatCount(Animation.INFINITE);
-        animatorsOfAsteroid3.start();
-
-        // Quatrième
-        Path path4 = new Path();
-        path4.moveTo(800f, 30f);
-        path4.quadTo(30f, 200f, 600f, 3000f);
-        ObjectAnimator animatorsOfAsteroid4;
-        animatorsOfAsteroid4 = ObjectAnimator.ofFloat(asteroid4, View.X, View.Y, path4);
-        animatorsOfAsteroid4.setDuration(5000);
-        animatorsOfAsteroid4.setRepeatCount(Animation.INFINITE);
-        animatorsOfAsteroid4.start();
 
     }
 
